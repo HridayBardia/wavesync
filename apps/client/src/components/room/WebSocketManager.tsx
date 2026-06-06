@@ -3,40 +3,27 @@ import { useEffect, useRef } from "react";
 import { useStore } from "@/store/globalStore";
 
 const getWSUrl = () => {
-  let envUrl = process.env.NEXT_PUBLIC_WS_URL;
-
-  // Auto-fix http/https to ws/wss if user configured it wrong
-  if (envUrl && envUrl.startsWith("http")) {
-    envUrl = envUrl.replace(/^http/, "ws");
-  }
-
-  // Hardcoded production fallback if env var is completely missing on Vercel
-  if (!envUrl && typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
-    return "wss://wavesync-backend-0j3v.onrender.com/ws";
-  }
-
   if (typeof window === "undefined") {
-    return envUrl ?? "ws://localhost:8080/ws";
+    return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
   }
-
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
-    return envUrl;
-  }
-
   const hostname = window.location.hostname;
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const port = window.location.port;
-  if (port === "3000") {
-    return `${protocol}//${hostname}:8080/ws`;
-  } else {
+
+  // Local development
+  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.")) {
+    if (port === "3000") return `${protocol}//${hostname}:8080/ws`;
     const portSuffix = port ? `:${port}` : "";
     return `${protocol}//${hostname}${portSuffix}/ws`;
   }
+
+  // Production fallback
+  return process.env.NEXT_PUBLIC_WS_URL ?? "wss://wavesync-backend-0j3v.onrender.com/ws";
 };
 
 const BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];
-const NTP_COUNT = 20;
-const NTP_MIN_READY = 5;
+const NTP_COUNT = 40;
+const NTP_MIN_READY = 10;
 const RESYNC_INTERVAL = 30_000;
 
 interface NTPSample { offset: number; rtt: number; }
@@ -68,7 +55,7 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
       }
       ws.send(JSON.stringify({ type: "NTP_REQUEST", t0: Date.now() }));
       sent++;
-    }, 200);
+    }, 50);
   }
 
   function connect() {

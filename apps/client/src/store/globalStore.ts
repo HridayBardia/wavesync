@@ -100,7 +100,7 @@ export const useStore = create<Store>((set, get) => ({
       ntpSamples: sampleCount,
       syncQuality: quality,
       // CRITICAL: hasSyncedOnce only goes true, NEVER false
-      hasSyncedOnce: s.hasSyncedOnce || sampleCount >= 5,
+      hasSyncedOnce: s.hasSyncedOnce || sampleCount >= 10,
     }));
   },
 
