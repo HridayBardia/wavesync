@@ -130,7 +130,10 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
     return () => {
       clearInterval(resyncTimer);
       clearInterval(pingTimer);
-      wsRef.current?.close();
+      if (wsRef.current) {
+        wsRef.current.onclose = null; // Prevent reconnect loop
+        wsRef.current.close();
+      }
     };
   }, []);
 
