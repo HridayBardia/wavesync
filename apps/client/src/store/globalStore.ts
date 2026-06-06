@@ -117,6 +117,21 @@ export const useStore = create<Store>((set, get) => ({
             serverPositionMs: msg.serverPositionMs ?? 0,
             lastServerTimeMs: msg.serverTimeMs ?? Date.now(),
           });
+          
+          // Catch-up play for late joiners if already playing
+          if (msg.isPlaying && msg.currentTrack) {
+            set({
+              pendingCommand: {
+                type: "SCHEDULED_PLAY",
+                serverExecuteAtMs: (msg.serverTimeMs ?? Date.now()) + 500, // execute 500ms from the time we got the state
+                trackUrl: msg.currentTrack.audioUrl,
+                startFromMs: (msg.serverPositionMs ?? 0) + 500
+              }
+            });
+          }
+          break;
+        case "USERS_UPDATED":
+          set({ connectedUsers: msg.connectedUsers ?? [] });
           break;
         case "QUEUE_UPDATE":
           set({

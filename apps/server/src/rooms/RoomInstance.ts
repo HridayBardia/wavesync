@@ -47,7 +47,14 @@ export class RoomInstance {
 
   updateClientOffset(id: string, offsetMs: number) {
     const c = this.clients.get(id);
-    if (c) c.syncOffsetMs = offsetMs;
+    if (c) {
+      c.syncOffsetMs = offsetMs;
+      // Broadcast the updated users list so everyone sees the new sync quality
+      this.broadcastAll({
+        type: "USERS_UPDATED",
+        connectedUsers: this.getUsers()
+      });
+    }
   }
 
   getUsers() {
