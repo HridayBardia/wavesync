@@ -17,6 +17,7 @@ interface ClientContext {
 
 export class RoomInstance {
   state: RoomState;
+  trackEndTimeout: any = null;
   private clients = new Map<string, ClientContext>();
 
   constructor(code: string) {
@@ -28,6 +29,13 @@ export class RoomInstance {
       playbackStartServerMs: null,
       playbackOffsetMs: 0,
     };
+  }
+
+  clearTrackEndTimeout() {
+    if (this.trackEndTimeout) {
+      clearTimeout(this.trackEndTimeout);
+      this.trackEndTimeout = null;
+    }
   }
 
   addClient(id: string, ws: any, displayName: string) {

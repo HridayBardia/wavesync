@@ -73,6 +73,7 @@ export const handleWS = {
           trackUrl: room.state.currentTrack.audioUrl,
           startFromMs: room.state.playbackOffsetMs,
         });
+        scheduleAutoAdvance(room, ws.data.roomCode, roomManager);
         break;
       }
 
@@ -82,6 +83,7 @@ export const handleWS = {
         const executeAt = Date.now() + SCHEDULE_AHEAD_MS;
         room.state.playbackOffsetMs = room.getCurrentPositionMs();
         room.state.isPlaying = false;
+        room.clearTrackEndTimeout();
         room.broadcastAll({ type: "SCHEDULED_PAUSE", serverExecuteAtMs: executeAt });
         break;
       }
@@ -98,6 +100,7 @@ export const handleWS = {
           positionMs: msg.positionMs,
           trackUrl: room.state.currentTrack.audioUrl,
         });
+        scheduleAutoAdvance(room, ws.data.roomCode, roomManager);
         break;
       }
 
@@ -120,6 +123,7 @@ export const handleWS = {
           trackUrl: room.state.currentTrack.audioUrl,
           startFromMs: 0,
         });
+        scheduleAutoAdvance(room, ws.data.roomCode, roomManager);
         break;
       }
 
@@ -153,6 +157,7 @@ export const handleWS = {
             trackUrl: room.state.currentTrack.audioUrl,
             startFromMs: 0,
           });
+          scheduleAutoAdvance(room, ws.data.roomCode, roomManager);
         }
         break;
       }
@@ -174,3 +179,50 @@ export const handleWS = {
     }
   },
 };
+
+function scheduleAutoAdvance(room: any, roomCode: string, roomManager: RoomManager) {
+  room.clearTrackEndTimeout();
+  if (room.state.isPlaying && room.state.currentTrack && room.state.currentTrack.durationMs > 0) {
+    const msRemaining = room.state.currentTrack.durationMs - room.state.playbackOffsetMs;
+    room.trackEndTimeout = setTimeout(() => {
+      autoAdvance(roomCode, roomManager);
+    }, Math.max(0, msRemaining + 500));
+  }
+}
+
+function autoAdvance(roomCode: string, roomManager: RoomManager) {
+  const room = roomManager.get(roomCode);
+  if (!room) return;
+  room.clearTrackEndTimeout();
+
+  if (room.state.queue.length > 0) {
+    room.state.currentTrack = room.state.queue.shift()!;
+    room.state.playbackOffsetMs = 0;
+    const executeAt = Date.now() + SCHEDULE_AHEAD_MS;
+    room.state.playbackStartServerMs = executeAt;
+    room.state.isPlaying = true;
+    room.broadcastAll({
+      type: "TRACK_CHANGED",
+      track: room.state.currentTrack,
+      queue: room.state.queue,
+    });
+    room.broadcastAll({
+      type: "SCHEDULED_PLAY",
+      serverExecuteAtMs: executeAt,
+      trackUrl: room.state.currentTrack.audioUrl,
+      startFromMs: 0,
+    });
+
+    scheduleAutoAdvance(room, roomCode, roomManager);
+  } else {
+    room.state.currentTrack = null;
+    room.state.isPlaying = false;
+    room.state.playbackOffsetMs = 0;
+    room.state.playbackStartServerMs = null;
+    room.broadcastAll({
+      type: "TRACK_CHANGED",
+      track: null,
+      queue: [],
+    });
+  }
+}
