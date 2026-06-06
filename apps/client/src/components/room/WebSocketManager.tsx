@@ -2,7 +2,18 @@
 import { useEffect, useRef } from "react";
 import { useStore } from "@/store/globalStore";
 
-const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
+const getWSUrl = () => {
+  if (typeof window === "undefined") {
+    return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
+  }
+  const envUrl = process.env.NEXT_PUBLIC_WS_URL;
+  if (envUrl) {
+    return envUrl.replace(/localhost|127\.0\.0\.1/g, window.location.hostname);
+  }
+  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+  return `${protocol}//${window.location.hostname}:8080/ws`;
+};
+
 const BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];
 const NTP_COUNT = 40;
 const NTP_MIN_READY = 10;
@@ -42,7 +53,8 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
 
   function connect() {
     let ws: WebSocket;
-    try { ws = new WebSocket(WS_URL); } catch {
+    const url = getWSUrl();
+    try { ws = new WebSocket(url); } catch {
       setTimeout(connect, BACKOFF[Math.min(attemptRef.current++, BACKOFF.length - 1)]);
       return;
     }

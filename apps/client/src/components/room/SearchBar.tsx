@@ -2,9 +2,19 @@
 import { useState } from "react";
 import { useStore } from "@/store/globalStore";
 
-const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+const getAPIUrl = () => {
+  if (typeof window === "undefined") {
+    return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+  }
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  if (envUrl) {
+    return envUrl.replace(/localhost|127\.0\.0\.1/g, window.location.hostname);
+  }
+  return `http://${window.location.hostname}:8080`;
+};
 
 export function SearchBar() {
+  const API = getAPIUrl();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);

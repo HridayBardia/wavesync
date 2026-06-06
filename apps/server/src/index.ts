@@ -7,6 +7,7 @@ const CORS = { "Access-Control-Allow-Origin": "*", "Access-Control-Allow-Headers
 
 const server = Bun.serve({
   port: Number(process.env.PORT ?? 8080),
+  hostname: "0.0.0.0",
 
   async fetch(req, server) {
     const url = new URL(req.url);
