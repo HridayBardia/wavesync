@@ -73,28 +73,32 @@ export async function getAudioStreamUrl(videoId: string): Promise<string> {
   const cached = streamCache.get(videoId);
   if (cached && cached.expiry > Date.now()) return cached.url;
 
-  // Use yt-dlp to extract the best audio-only stream URL
-  const proc = Bun.spawn(
-    [
-      "yt-dlp",
-      `https://www.youtube.com/watch?v=${videoId}`,
-      "-f", "bestaudio[ext=m4a]/bestaudio[ext=webm]/bestaudio",
-      "--get-url",
-      "--no-playlist",
-      "--no-warnings",
-      "--quiet",
-    ],
-    { stdout: "pipe", stderr: "pipe" }
-  );
+  // Use a public Piped API instance to get the stream URL (bypasses YouTube datacenter blocks)
+  const pipedRes = await fetch(`https://pipedapi.kavin.rocks/streams/${videoId}`, {
+    headers: { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)" },
+    signal: AbortSignal.timeout(10000),
+  });
 
-  const output = await new Response(proc.stdout).text();
-  const url = output.trim().split("\n")[0];
-
-  if (!url || !url.startsWith("http")) {
-    throw new Error(`yt-dlp could not extract audio for ${videoId}`);
+  if (!pipedRes.ok) {
+    throw new Error(`Piped API failed: ${pipedRes.status}`);
   }
 
-  // Cache for 4 hours (YouTube stream URLs expire)
+  const data = await pipedRes.json();
+  const audioStreams = data.audioStreams ?? [];
+  
+  if (audioStreams.length === 0) {
+    throw new Error(`No audio streams found for ${videoId}`);
+  }
+
+  // Get highest bitrate audio stream (prefer m4a/mp4a over webm/opus for safari compatibility)
+  const stream = audioStreams.sort((a: any, b: any) => b.bitrate - a.bitrate)[0];
+  const url = stream.url;
+
+  if (!url) {
+    throw new Error(`Could not extract stream URL for ${videoId}`);
+  }
+
+  // Cache for 4 hours
   streamCache.set(videoId, { url, expiry: Date.now() + 4 * 3600_000 });
   return url;
 }
