@@ -1,34 +1,22 @@
 "use client";
 import { useEffect, useRef } from "react";
 import { useStore } from "@/store/globalStore";
-import { audioEngine } from "@/utils/audio";
+import { ytPlayerEngine } from "@/utils/youtubePlayer";
 
-const STALE_MS = 3000;
+const STALE_MS = 5000;
 
 export function AudioPlayer() {
   const { pendingCommand, ntpOffsetMs, clearPendingCommand, currentTrack, hasSyncedOnce } = useStore();
+  const timeoutRef = useRef<any>(null);
 
-  function getCtx(): AudioContext {
-    audioEngine.init();
-    const ctx = audioEngine.getContext()!;
-    if (ctx.state === "suspended") ctx.resume();
-    return ctx;
-  }
+  useEffect(() => {
+    // Initialize YouTube Player
+    ytPlayerEngine.init("youtube-player-container");
 
-  function getAudio(): HTMLAudioElement {
-    return audioEngine.getAudioElement();
-  }
-
-  function connectAudio(audio: HTMLAudioElement) {
-    audioEngine.connectMediaElement(audio);
-  }
-
-  function serverToLocalAudioCtxTime(serverMs: number): number {
-    const ctx = getCtx();
-    const localMs = serverMs - ntpOffsetMs;
-    const msUntil = localMs - Date.now();
-    return ctx.currentTime + msUntil / 1000;
-  }
+    return () => {
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     if (!pendingCommand) return;
@@ -40,76 +28,79 @@ export function AudioPlayer() {
     const cmd = pendingCommand;
     clearPendingCommand();
 
-    const msUntilExec = (cmd.serverExecuteAtMs - ntpOffsetMs) - Date.now();
-    if (msUntilExec < -STALE_MS) {
-      console.warn("[AudioPlayer] Stale command, dropping:", cmd.type, `${msUntilExec}ms late`);
+    const delayMs = (cmd.serverExecuteAtMs - ntpOffsetMs) - Date.now();
+    if (delayMs < -STALE_MS) {
+      console.warn("[AudioPlayer] Stale command, dropping:", cmd.type, `${delayMs}ms late`);
       return;
     }
 
-    const audio = getAudio();
+    const youtubeId = currentTrack?.youtubeId || (currentTrack?.audioUrl ? currentTrack.audioUrl.split("/").pop() : null);
+    if (!youtubeId) {
+      console.warn("[AudioPlayer] No YouTube ID available for command:", cmd.type);
+      return;
+    }
+
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
     if (cmd.type === "SCHEDULED_PLAY") {
-      // Load new track if needed
-      const newUrl = cmd.trackUrl;
-      if (audio.src !== newUrl) {
-        audio.src = newUrl;
-        audio.load();
-      }
-
-      connectAudio(audio);
-      const ctx = getCtx();
-
-      const scheduleAt = Math.max(ctx.currentTime + 0.05, serverToLocalAudioCtxTime(cmd.serverExecuteAtMs));
-      const startFrom = (cmd.startFromMs ?? 0) / 1000;
-
-      // Wait for enough data, then schedule
-      const doPlay = () => {
-        audio.currentTime = startFrom;
-        const delay = (scheduleAt - ctx.currentTime) * 1000;
-        if (delay > 0) {
-          setTimeout(() => {
-            audio.play().catch((e) => console.error("[AudioPlayer] play() failed:", e));
-          }, delay);
-        } else {
-          audio.play().catch((e) => console.error("[AudioPlayer] play() failed:", e));
-        }
-      };
-
-      if (audio.readyState >= 3) { // HAVE_FUTURE_DATA
-        doPlay();
+      const startFromMs = cmd.startFromMs ?? 0;
+      if (delayMs > 0) {
+        timeoutRef.current = setTimeout(() => {
+          ytPlayerEngine.loadAndPlay(youtubeId, startFromMs / 1000, true);
+        }, delayMs);
       } else {
-        audio.addEventListener("canplay", doPlay, { once: true });
+        const catchUpSec = (startFromMs - delayMs) / 1000;
+        ytPlayerEngine.loadAndPlay(youtubeId, catchUpSec, true);
       }
 
     } else if (cmd.type === "SCHEDULED_PAUSE") {
-      const ctx = getCtx();
-      const scheduleAt = serverToLocalAudioCtxTime(cmd.serverExecuteAtMs);
-      const delay = Math.max(0, (scheduleAt - ctx.currentTime) * 1000);
-      setTimeout(() => audio.pause(), delay);
+      if (delayMs > 0) {
+        timeoutRef.current = setTimeout(() => {
+          ytPlayerEngine.pause();
+        }, delayMs);
+      } else {
+        ytPlayerEngine.pause();
+      }
 
     } else if (cmd.type === "SCHEDULED_SEEK") {
-      const ctx = getCtx();
-      const scheduleAt = serverToLocalAudioCtxTime(cmd.serverExecuteAtMs);
-      const delay = Math.max(0, (scheduleAt - ctx.currentTime) * 1000);
-      setTimeout(() => {
-        audio.currentTime = (cmd.positionMs ?? 0) / 1000;
-        if (!audio.paused) audio.play().catch(() => {});
-      }, delay);
-    }
-
-  }, [pendingCommand, hasSyncedOnce]);
-
-  // Load track when currentTrack changes (preload)
-  useEffect(() => {
-    if (currentTrack?.audioUrl) {
-      const audio = getAudio();
-      if (audio.src !== currentTrack.audioUrl) {
-        audio.src = currentTrack.audioUrl;
-        audio.load(); // start preloading
+      const positionMs = cmd.positionMs ?? 0;
+      if (delayMs > 0) {
+        timeoutRef.current = setTimeout(() => {
+          ytPlayerEngine.seekTo(positionMs / 1000);
+        }, delayMs);
+      } else {
+        const catchUpSec = (positionMs - delayMs) / 1000;
+        ytPlayerEngine.seekTo(catchUpSec);
       }
     }
-  }, [currentTrack?.audioUrl]);
 
-  return null; // invisible — audio is handled via Web Audio API
+  }, [pendingCommand, hasSyncedOnce, currentTrack, ntpOffsetMs]);
+
+  // Load track when currentTrack changes (preload / pre-cue)
+  useEffect(() => {
+    if (currentTrack) {
+      const youtubeId = currentTrack.youtubeId || (currentTrack.audioUrl ? currentTrack.audioUrl.split("/").pop() : null);
+      if (youtubeId) {
+        ytPlayerEngine.loadAndPlay(youtubeId, 0, false);
+      }
+    }
+  }, [currentTrack?.id]);
+
+  return (
+    <div 
+      style={{
+        position: "absolute",
+        left: "-9999px",
+        top: "-9999px",
+        width: "1px",
+        height: "1px",
+        opacity: 0,
+        pointerEvents: "none"
+      }}
+    >
+      <div id="youtube-player-container" />
+    </div>
+  );
 }
+
 export default AudioPlayer;

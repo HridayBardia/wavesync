@@ -4,6 +4,7 @@ import { z } from "zod";
 
 export const TrackSchema = z.object({
   id: z.string(),
+  youtubeId: z.string().optional(),
   title: z.string(),
   artist: z.string().optional(),
   durationMs: z.number(),

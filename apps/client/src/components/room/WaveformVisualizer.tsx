@@ -39,9 +39,17 @@ export default function WaveformVisualizer() {
       
       ctx.clearRect(0, 0, width, height);
 
-      const activeAnalyser = audioEngine.getAnalyser();
-      if (activeAnalyser && isPlaying) {
-        activeAnalyser.getByteTimeDomainData(dataArray);
+      if (isPlaying) {
+        // Mock active dancing wave data using multiple sine waves
+        const now = Date.now() * 0.008;
+        for (let i = 0; i < bufferLength; i++) {
+          const progress = i / bufferLength;
+          const wave1 = Math.sin(progress * Math.PI * 8 + now) * Math.sin(progress * Math.PI);
+          const wave2 = Math.cos(progress * Math.PI * 14 - now * 1.5) * 0.5;
+          const wave3 = Math.sin(progress * Math.PI * 22 + now * 2) * 0.25;
+          const combined = (wave1 + wave2 + wave3) / 1.75;
+          dataArray[i] = 128 + combined * 45; // larger amplitude dancing wave
+        }
       } else {
         // Mock idle wave data using sine waves
         const now = Date.now() * 0.004;

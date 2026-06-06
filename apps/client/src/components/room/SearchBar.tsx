@@ -48,19 +48,6 @@ export function SearchBar() {
   async function addTrack(track: any) {
     setAddingId(track.id);
     try {
-      // THE KEY FIX: audioUrl points to OUR server proxy, not YouTube directly
-      const audioUrl = `${API}/stream/${track.id}`;
-
-      // Verify the stream is actually reachable before adding
-      const check = await fetch(`${API}/stream/${track.id}`, {
-        method: "HEAD",
-        signal: AbortSignal.timeout(5000),
-      });
-
-      if (!check.ok && check.status !== 206) {
-        throw new Error(`Stream unavailable (${check.status})`);
-      }
-
       const fullTrack = {
         id: crypto.randomUUID(),
         youtubeId: track.id,
@@ -68,7 +55,7 @@ export function SearchBar() {
         artist: track.artist,
         durationMs: track.durationMs,
         thumbnailUrl: track.thumbnailUrl,
-        audioUrl, // http://localhost:8080/stream/<videoId>
+        audioUrl: `${API}/stream/${track.id}`,
         source: "youtube",
         addedBy: useStore.getState().displayName || "Guest",
       };

@@ -1,3 +1,5 @@
+import { ytPlayerEngine } from "./youtubePlayer";
+
 class AudioEngine {
   private ctx: AudioContext | null = null;
   private analyser: AnalyserNode | null = null;
@@ -60,6 +62,11 @@ class AudioEngine {
   setVolume(vol: number) {
     if (this.gainNode) {
       this.gainNode.gain.value = Math.max(0, Math.min(1, vol));
+    }
+    try {
+      ytPlayerEngine.setVolume(vol);
+    } catch (e) {
+      console.error("[AudioEngine] failed to set YT volume:", e);
     }
   }
 }

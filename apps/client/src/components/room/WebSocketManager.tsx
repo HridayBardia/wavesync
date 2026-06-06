@@ -22,8 +22,8 @@ const getWSUrl = () => {
 };
 
 const BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];
-const NTP_COUNT = 40;
-const NTP_MIN_READY = 10;
+const NTP_COUNT = 20;
+const NTP_MIN_READY = 5;
 const RESYNC_INTERVAL = 30_000;
 
 interface NTPSample { offset: number; rtt: number; }
@@ -55,7 +55,7 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
       }
       ws.send(JSON.stringify({ type: "NTP_REQUEST", t0: Date.now() }));
       sent++;
-    }, 50);
+    }, 200);
   }
 
   function connect() {
