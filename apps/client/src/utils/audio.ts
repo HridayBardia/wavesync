@@ -3,6 +3,7 @@ class AudioEngine {
   private analyser: AnalyserNode | null = null;
   private gainNode: GainNode | null = null;
   private mediaSourceNode: MediaElementAudioSourceNode | null = null;
+  private audioElement: HTMLAudioElement | null = null;
 
   init() {
     if (this.ctx) return;
@@ -15,6 +16,23 @@ class AudioEngine {
     
     this.gainNode.connect(this.analyser);
     this.analyser.connect(this.ctx.destination);
+
+    // Initialize the singleton HTMLAudioElement
+    this.getAudioElement();
+  }
+
+  getAudioElement(): HTMLAudioElement {
+    if (!this.audioElement && typeof window !== "undefined") {
+      this.audioElement = new Audio();
+      this.audioElement.crossOrigin = "anonymous";
+      this.audioElement.preload = "auto";
+      
+      // Automatically connect it if ctx is initialized
+      if (this.ctx) {
+        this.connectMediaElement(this.audioElement);
+      }
+    }
+    return this.audioElement!;
   }
 
   getAnalyser() {

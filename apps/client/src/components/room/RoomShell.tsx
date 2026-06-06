@@ -17,11 +17,19 @@ export function RoomShell({ roomCode }: { roomCode: string }) {
     setDisplayName(name);
     setRoomInfo(roomCode, name);
 
-    // Auto-unlock AudioContext on first tap/click
+    // Auto-unlock AudioContext and HTMLAudioElement on first tap/click
     const unlock = () => {
       try {
         audioEngine.init();
         audioEngine.getContext()?.resume();
+        
+        // Play and pause a tiny silent duration to unlock HTMLAudioElement for iOS Safari
+        const audio = audioEngine.getAudioElement();
+        audio.play().then(() => {
+          audio.pause();
+        }).catch((e) => {
+          console.warn("[AudioEngine] failed to unlock audio element:", e);
+        });
       } catch {}
       window.removeEventListener("click", unlock);
       window.removeEventListener("touchstart", unlock);

@@ -6,8 +6,7 @@ import { audioEngine } from "@/utils/audio";
 const STALE_MS = 3000;
 
 export function AudioPlayer() {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const { pendingCommand, ntpOffsetMs, clearPendingCommand, currentTrack } = useStore();
+  const { pendingCommand, ntpOffsetMs, clearPendingCommand, currentTrack, hasSyncedOnce } = useStore();
 
   function getCtx(): AudioContext {
     audioEngine.init();
@@ -17,12 +16,7 @@ export function AudioPlayer() {
   }
 
   function getAudio(): HTMLAudioElement {
-    if (!audioRef.current) {
-      audioRef.current = new Audio();
-      audioRef.current.crossOrigin = "anonymous";
-      audioRef.current.preload = "auto";
-    }
-    return audioRef.current;
+    return audioEngine.getAudioElement();
   }
 
   function connectAudio(audio: HTMLAudioElement) {
@@ -38,6 +32,11 @@ export function AudioPlayer() {
 
   useEffect(() => {
     if (!pendingCommand) return;
+    if (!hasSyncedOnce) {
+      console.log("[AudioPlayer] Deferring command execution until NTP sync completes");
+      return;
+    }
+
     const cmd = pendingCommand;
     clearPendingCommand();
 
@@ -98,7 +97,7 @@ export function AudioPlayer() {
       }, delay);
     }
 
-  }, [pendingCommand]);
+  }, [pendingCommand, hasSyncedOnce]);
 
   // Load track when currentTrack changes (preload)
   useEffect(() => {
