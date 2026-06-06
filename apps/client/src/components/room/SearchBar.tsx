@@ -7,10 +7,18 @@ const getAPIUrl = () => {
     return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
   }
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (envUrl) {
-    return envUrl.replace(/localhost|127\.0\.0\.1/g, window.location.hostname);
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl;
   }
-  return `http://${window.location.hostname}:8080`;
+  const hostname = window.location.hostname;
+  const protocol = window.location.protocol;
+  const port = window.location.port;
+  if (port === "3000") {
+    return `${protocol}//${hostname}:8080`;
+  } else {
+    const portSuffix = port ? `:${port}` : "";
+    return `${protocol}//${hostname}${portSuffix}`;
+  }
 };
 
 export function SearchBar() {

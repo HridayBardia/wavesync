@@ -7,11 +7,18 @@ const getWSUrl = () => {
     return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
   }
   const envUrl = process.env.NEXT_PUBLIC_WS_URL;
-  if (envUrl) {
-    return envUrl.replace(/localhost|127\.0\.0\.1/g, window.location.hostname);
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl;
   }
+  const hostname = window.location.hostname;
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-  return `${protocol}//${window.location.hostname}:8080/ws`;
+  const port = window.location.port;
+  if (port === "3000") {
+    return `${protocol}//${hostname}:8080/ws`;
+  } else {
+    const portSuffix = port ? `:${port}` : "";
+    return `${protocol}//${hostname}${portSuffix}/ws`;
+  }
 };
 
 const BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];

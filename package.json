@@ -7,12 +7,16 @@
     "packages/*"
   ],
   "scripts": {
-    "dev": "turbo run dev",
+    "dev": "bunx concurrently \"turbo run dev\" \"node reverse-proxy.js\"",
     "build": "turbo run build",
     "test": "turbo run test"
   },
   "devDependencies": {
     "turbo": "^2.0.0",
     "typescript": "^5.4.5"
+  },
+  "dependencies": {
+    "@types/http-proxy": "^1.17.17",
+    "http-proxy": "^1.18.1"
   }
 }
