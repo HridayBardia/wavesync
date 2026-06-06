@@ -1,0 +1,22 @@
+{
+  "name": "wavesync-server",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --hot src/index.ts",
+    "build": "bun build --target=bun src/index.ts --outdir ./dist",
+    "start": "bun run src/index.ts"
+  },
+  "dependencies": {
+    "@wavesync/shared": "workspace:*",
+    "zod": "^3.23.8",
+    "pino": "^9.1.0",
+    "pino-pretty": "^11.1.0",
+    "@aws-sdk/client-s3": "^3.588.0",
+    "@aws-sdk/s3-request-presigner": "^3.588.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/bun": "^1.1.2"
+  }
+}

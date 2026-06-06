@@ -1,0 +1,12 @@
+export const NTP_SAMPLE_COUNT = 40;           // Total NTP samples to collect
+export const NTP_MIN_SAMPLES = 20;            // Min before sync is "ready"
+export const NTP_FILTER_PERCENTILE = 0.5;     // Use bottom 50% by RTT
+export const SCHEDULE_AHEAD_MS = 400;         // Audio lookahead buffer
+export const STALE_COMMAND_THRESHOLD_MS = 2000; // Drop commands older than this
+export const HEARTBEAT_INTERVAL_MS = 15000;   // Server ping interval
+export const HEARTBEAT_TIMEOUT_MS = 5000;     // Pong must arrive within
+export const RESYNC_INTERVAL_MS = 30000;      // Background resync
+export const RESYNC_DRIFT_THRESHOLD_MS = 15;  // Force resync if drift > this
+export const RECONNECT_BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];
+export const MAX_UPLOAD_SIZE_BYTES = 200 * 1024 * 1024; // 200MB
+export const SIGNED_URL_EXPIRY_SECONDS = 4 * 60 * 60;  // 4 hours

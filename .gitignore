@@ -1,0 +1,23 @@
+# Dependency directories
+node_modules/
+.next/
+dist/
+build/
+out/
+
+# Environments
+.env
+.env.local
+.env*.local
+
+# Cache and temporary folders
+.turbo/
+.cache/
+.bun/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Uploads directory (for local file fallback storage)
+uploads/
