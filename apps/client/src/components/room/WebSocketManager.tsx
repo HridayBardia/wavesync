@@ -3,13 +3,26 @@ import { useEffect, useRef } from "react";
 import { useStore } from "@/store/globalStore";
 
 const getWSUrl = () => {
-  if (typeof window === "undefined") {
-    return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
+  let envUrl = process.env.NEXT_PUBLIC_WS_URL;
+
+  // Auto-fix http/https to ws/wss if user configured it wrong
+  if (envUrl && envUrl.startsWith("http")) {
+    envUrl = envUrl.replace(/^http/, "ws");
   }
-  const envUrl = process.env.NEXT_PUBLIC_WS_URL;
+
+  // Hardcoded production fallback if env var is completely missing on Vercel
+  if (!envUrl && typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1") {
+    return "wss://wavesync-backend-0j3v.onrender.com/ws";
+  }
+
+  if (typeof window === "undefined") {
+    return envUrl ?? "ws://localhost:8080/ws";
+  }
+
   if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
     return envUrl;
   }
+
   const hostname = window.location.hostname;
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const port = window.location.port;
