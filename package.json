@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "dev": "bunx concurrently \"turbo run dev\" \"node reverse-proxy.js\"",
+    "start": "bunx concurrently \"turbo run start\" \"node reverse-proxy.js\"",
     "build": "turbo run build",
     "test": "turbo run test"
   },
