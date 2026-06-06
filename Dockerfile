@@ -29,7 +29,5 @@ RUN bun run build
 # Expose port 8000 which is used by our reverse-proxy
 EXPOSE 8000
 
-# Start everything using concurrently
-# turbo run start runs Next.js on 3000 and Bun server on 8080
-# node reverse-proxy.js runs on 8000 and routes traffic to them
-CMD ["bun", "run", "start"]
+# Start the backend server directly
+CMD ["bun", "run", "apps/server/src/index.ts"]
