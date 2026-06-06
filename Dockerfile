@@ -26,8 +26,6 @@ RUN bun install
 # Build the Next.js client
 RUN bun run build
 
-# Expose port 8000 which is used by our reverse-proxy
-EXPOSE 8000
-
+# (Removed EXPOSE 8000 to let Render auto-assign the PORT)
 # Start the backend server directly
 CMD ["bun", "run", "apps/server/src/index.ts"]
