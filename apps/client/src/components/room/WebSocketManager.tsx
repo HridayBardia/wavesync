@@ -113,6 +113,14 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
   useEffect(() => {
     connect();
 
+    // Fallback: If NTP sync fails to complete, force it to unblock playback
+    const fallbackTimer = setTimeout(() => {
+      const state = useStore.getState();
+      if (!state.hasSyncedOnce) {
+        state.updateNTP(0, 999, 10);
+      }
+    }, 3000);
+
     // Background resync — NEVER resets hasSyncedOnce or shows syncing screen
     const resyncTimer = setInterval(() => {
       if (wsRef.current?.readyState === WebSocket.OPEN) {
@@ -128,6 +136,7 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
     }, 15_000);
 
     return () => {
+      clearTimeout(fallbackTimer);
       clearInterval(resyncTimer);
       clearInterval(pingTimer);
       if (wsRef.current) {
