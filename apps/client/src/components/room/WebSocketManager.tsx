@@ -6,19 +6,36 @@ const getWSUrl = () => {
   if (typeof window === "undefined") {
     return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
   }
+
+  const envUrl = process.env.NEXT_PUBLIC_WS_URL;
+  // If explicitly set to a remote URL, use it
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+    return envUrl;
+  }
+
   const hostname = window.location.hostname;
   const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
   const port = window.location.port;
+  const host = window.location.host; // includes port
 
-  // Local development
-  if (hostname === "localhost" || hostname === "127.0.0.1" || hostname.startsWith("192.168.")) {
-    if (port === "3000") return `${protocol}//${hostname}:8080/ws`;
-    const portSuffix = port ? `:${port}` : "";
-    return `${protocol}//${hostname}${portSuffix}/ws`;
+  // If using Next.js dev server on 3000, connect to backend on 8080
+  if (port === "3000") {
+    return `${protocol}//${hostname}:8080/ws`;
+  }
+
+  // Local IP, Ngrok, or Reverse Proxy
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname.startsWith("192.168.") ||
+    hostname.includes("ngrok") ||
+    hostname.includes("loca.lt")
+  ) {
+    return `${protocol}//${host}/ws`;
   }
 
   // Production fallback
-  return process.env.NEXT_PUBLIC_WS_URL ?? "wss://wavesync-backend-0j3v.onrender.com/ws";
+  return "wss://wavesync-backend-0j3v.onrender.com/ws";
 };
 
 const BACKOFF = [1000, 2000, 4000, 8000, 16000, 30000];
