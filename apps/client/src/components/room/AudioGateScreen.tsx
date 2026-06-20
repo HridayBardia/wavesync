@@ -11,6 +11,14 @@ export function AudioGateScreen() {
       audioEngine.init();
       const ctx = audioEngine.getContext();
       ctx?.resume();
+      
+      // Play and pause a tiny silent duration to unlock HTMLAudioElement for iOS Safari
+      const audio = audioEngine.getAudioElement();
+      audio.play().then(() => {
+        audio.pause();
+      }).catch((e) => {
+        console.warn("[AudioEngine] failed to unlock audio element:", e);
+      });
     } catch {}
     setGestureUnlocked(); // stored in Zustand — survives re-renders
   }

@@ -124,7 +124,7 @@ export function RoomDashboard({ roomCode }: { roomCode: string }) {
 
         <div className="flex items-center gap-4">
           <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold ${syncColor}`}>
-            {syncDot} {syncQuality === "syncing" ? "Syncing…" : `±${Math.round(ntpOffsetMs)}ms`}
+            {syncDot} {syncQuality === "syncing" ? "Syncing…" : syncQuality === "good" ? "Synced" : `±${Math.round(ntpOffsetMs)}ms`}
           </span>
           <span className="text-xs text-slate-500 font-mono hidden md:inline">
             Status: {connected ? "Connected" : "Reconnecting..."}
