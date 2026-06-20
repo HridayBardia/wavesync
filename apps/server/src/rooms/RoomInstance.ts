@@ -13,6 +13,7 @@ interface ClientContext {
   ws: any;
   displayName: string;
   syncOffsetMs: number;
+  syncQuality: "syncing" | "good" | "fair" | "poor";
 }
 
 export class RoomInstance {
@@ -39,16 +40,19 @@ export class RoomInstance {
   }
 
   addClient(id: string, ws: any, displayName: string) {
-    this.clients.set(id, { ws, displayName, syncOffsetMs: 0 });
+    this.clients.set(id, { ws, displayName, syncOffsetMs: 0, syncQuality: "syncing" });
   }
 
   removeClient(id: string) { this.clients.delete(id); }
   clientCount() { return this.clients.size; }
 
-  updateClientOffset(id: string, offsetMs: number) {
+  updateClientOffset(id: string, offsetMs: number, rttMs?: number) {
     const c = this.clients.get(id);
     if (c) {
       c.syncOffsetMs = offsetMs;
+      if (rttMs !== undefined) {
+        c.syncQuality = rttMs < 50 ? "good" : rttMs < 150 ? "fair" : "poor";
+      }
       // Broadcast the updated users list so everyone sees the new sync quality
       this.broadcastAll({
         type: "USERS_UPDATED",
@@ -59,13 +63,11 @@ export class RoomInstance {
 
   getUsers() {
     return Array.from(this.clients.entries()).map(([id, c]) => {
-      const absOffset = Math.abs(c.syncOffsetMs);
-      const syncQuality = absOffset < 15 ? "good" : absOffset < 50 ? "fair" : "poor";
       return {
         id,
         displayName: c.displayName,
         syncOffsetMs: c.syncOffsetMs,
-        syncQuality,
+        syncQuality: c.syncQuality,
       };
     });
   }

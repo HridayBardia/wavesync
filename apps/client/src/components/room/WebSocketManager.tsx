@@ -107,7 +107,7 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
           updateNTP(offsetMs, rttMs, samplesRef.current.length);
 
           // Report our offset to server
-          ws.send(JSON.stringify({ type: "UPDATE_SYNC_OFFSET", offsetMs }));
+          ws.send(JSON.stringify({ type: "UPDATE_SYNC_OFFSET", offsetMs, rttMs }));
         }
         return;
       }

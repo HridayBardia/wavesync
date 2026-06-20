@@ -164,7 +164,7 @@ export const handleWS = {
 
       case "UPDATE_SYNC_OFFSET": {
         const room = roomManager.get(ws.data.roomCode);
-        if (room) room.updateClientOffset(ws.data.userId, msg.offsetMs);
+        if (room) room.updateClientOffset(ws.data.userId, msg.offsetMs, msg.rttMs);
         break;
       }
     }

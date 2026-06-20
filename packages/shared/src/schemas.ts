@@ -74,6 +74,12 @@ export const SpatialUpdateMsg = z.object({
   spatialY: z.number(),
 });
 
+export const UpdateSyncOffsetMsg = z.object({
+  type: z.literal("UPDATE_SYNC_OFFSET"),
+  offsetMs: z.number(),
+  rttMs: z.number().optional(),
+});
+
 // ─── SERVER → CLIENT ───────────────────────────────────────────
 
 export const NTPResponseMsg = z.object({
@@ -127,6 +133,11 @@ export const UserLeftMsg = z.object({
   userId: z.string(),
 });
 
+export const UsersUpdatedMsg = z.object({
+  type: z.literal("USERS_UPDATED"),
+  connectedUsers: z.array(UserSchema),
+});
+
 export const PingMsg = z.object({
   type: z.literal("PING"),
   serverTimeMs: z.number(),
@@ -169,6 +180,7 @@ export type SkipMsg = z.infer<typeof SkipMsg>;
 export type AddToQueueMsg = z.infer<typeof AddToQueueMsg>;
 export type PongMsg = z.infer<typeof PongMsg>;
 export type SpatialUpdateMsg = z.infer<typeof SpatialUpdateMsg>;
+export type UpdateSyncOffsetMsg = z.infer<typeof UpdateSyncOffsetMsg>;
 
 export type NTPResponseMsg = z.infer<typeof NTPResponseMsg>;
 export type RoomStateMsg = z.infer<typeof RoomStateMsg>;
@@ -178,6 +190,7 @@ export type ScheduledSeekMsg = z.infer<typeof ScheduledSeekMsg>;
 export type QueueUpdateMsg = z.infer<typeof QueueUpdateMsg>;
 export type UserJoinedMsg = z.infer<typeof UserJoinedMsg>;
 export type UserLeftMsg = z.infer<typeof UserLeftMsg>;
+export type UsersUpdatedMsg = z.infer<typeof UsersUpdatedMsg>;
 export type PingMsg = z.infer<typeof PingMsg>;
 export type ErrorMsg = z.infer<typeof ErrorMsg>;
 export type ServerShutdownMsg = z.infer<typeof ServerShutdownMsg>;
