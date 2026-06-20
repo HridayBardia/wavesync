@@ -50,8 +50,11 @@ export class RoomInstance {
     const c = this.clients.get(id);
     if (c) {
       c.syncOffsetMs = offsetMs;
-      if (rttMs !== undefined) {
-        c.syncQuality = rttMs < 50 ? "good" : rttMs < 150 ? "fair" : "poor";
+      if (rttMs !== undefined && rttMs >= 999) {
+        c.syncQuality = "poor";
+      } else {
+        const absOffset = Math.abs(offsetMs);
+        c.syncQuality = absOffset < 15 ? "good" : absOffset < 50 ? "fair" : "poor";
       }
       // Broadcast the updated users list so everyone sees the new sync quality
       this.broadcastAll({

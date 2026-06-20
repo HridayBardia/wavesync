@@ -18,8 +18,8 @@ const getWSUrl = () => {
   const port = window.location.port;
   const host = window.location.host; // includes port
 
-  // If using Next.js dev server on 3000, connect to backend on 8080
-  if (port === "3000") {
+  // If using Next.js dev server on 3000-3010 (or any dev port), connect to backend on 8080
+  if (port && (port.startsWith("3") || port === "5173" || port === "4173")) {
     return `${protocol}//${hostname}:8080/ws`;
   }
 

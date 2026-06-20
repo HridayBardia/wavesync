@@ -13,7 +13,7 @@ const getAPIUrl = () => {
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
   const port = window.location.port;
-  if (port === "3000") {
+  if (port && (port.startsWith("3") || port === "5173" || port === "4173")) {
     return `${protocol}//${hostname}:8080`;
   } else {
     const portSuffix = port ? `:${port}` : "";

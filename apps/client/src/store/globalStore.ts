@@ -93,7 +93,11 @@ export const useStore = create<Store>((set, get) => ({
   setGestureUnlocked: () => set({ gestureUnlocked: true }),
 
   updateNTP: (offsetMs, rttMs, sampleCount) => {
-    const quality = rttMs < 50 ? "good" : rttMs < 150 ? "fair" : "poor";
+    let quality: "syncing" | "good" | "fair" | "poor" = "poor";
+    if (rttMs < 999) {
+      const absOffset = Math.abs(offsetMs);
+      quality = absOffset < 15 ? "good" : absOffset < 50 ? "fair" : "poor";
+    }
     set((s) => ({
       ntpOffsetMs: offsetMs,
       ntpRttMs: rttMs,
