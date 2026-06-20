@@ -2,23 +2,44 @@
 import { useState } from "react";
 import { useStore } from "@/store/globalStore";
 
+const isLocalHostname = (hostname: string) => {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname === "::1" ||
+    hostname.endsWith(".local") ||
+    hostname.startsWith("192.168.") ||
+    hostname.startsWith("10.") ||
+    hostname.startsWith("172.") ||
+    hostname.includes("ngrok") ||
+    hostname.includes("loca.lt")
+  );
+};
+
 const getAPIUrl = () => {
   if (typeof window === "undefined") {
     return process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
   }
   const envUrl = process.env.NEXT_PUBLIC_API_URL;
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1") && !envUrl.includes("192.168.") && !envUrl.includes("10.") && !envUrl.includes("172.")) {
     return envUrl;
   }
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
   const port = window.location.port;
-  if (port && (port.startsWith("3") || port === "5173" || port === "4173")) {
-    return `${protocol}//${hostname}:8080`;
-  } else {
-    const portSuffix = port ? `:${port}` : "";
-    return `${protocol}//${hostname}${portSuffix}`;
+  
+  if (isLocalHostname(hostname)) {
+    if (port && (port.startsWith("3") || port === "5173" || port === "4173")) {
+      return `${protocol}//${hostname}:8080`;
+    } else {
+      const portSuffix = port ? `:${port}` : "";
+      return `${protocol}//${hostname}${portSuffix}`;
+    }
   }
+  
+  // Production fallback
+  return "https://wavesync-backend-0j3v.onrender.com";
 };
 
 export function SearchBar() {

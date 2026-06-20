@@ -7,6 +7,7 @@ export const handleWS = {
     ws.data.userId = crypto.randomUUID();
     ws.data.roomCode = "";
     ws.data.lastPong = Date.now();
+    console.log(`[WS Handler] Connection opened for userId: ${ws.data.userId}`);
   },
 
   message(ws: any, raw: string | Buffer, roomManager: RoomManager) {
@@ -37,6 +38,8 @@ export const handleWS = {
         const uppercaseCode = roomCode.toUpperCase();
         ws.data.roomCode = uppercaseCode;
         ws.data.displayName = displayName;
+
+        console.log(`[WS Handler] User "${displayName}" joining room "${uppercaseCode}" (userId: ${ws.data.userId})`);
 
         const room = roomManager.getOrCreate(uppercaseCode);
         room.addClient(ws.data.userId, ws, displayName);
@@ -171,6 +174,7 @@ export const handleWS = {
   },
 
   close(ws: any, roomManager: RoomManager) {
+    console.log(`[WS Handler] Connection closed for userId: ${ws.data.userId}, roomCode: "${ws.data.roomCode}"`);
     const room = roomManager.get(ws.data.roomCode);
     if (room) {
       room.removeClient(ws.data.userId);

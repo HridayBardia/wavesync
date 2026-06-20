@@ -30,9 +30,9 @@ server.on('upgrade', function (req, socket, head) {
   const url = req.url || '';
   
   if (url.startsWith('/ws') || url.startsWith('/search') || url.startsWith('/stream')) {
-    proxy.ws(req, socket, head, { target: 'http://localhost:8080' });
+    proxy.ws(req, socket, head, { target: 'ws://localhost:8080' });
   } else {
-    proxy.ws(req, socket, head, { target: 'http://localhost:3000' });
+    proxy.ws(req, socket, head, { target: 'ws://localhost:3000' });
   }
 });
 

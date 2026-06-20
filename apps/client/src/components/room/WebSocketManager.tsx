@@ -2,6 +2,21 @@
 import { useEffect, useRef } from "react";
 import { useStore } from "@/store/globalStore";
 
+const isLocalHostname = (hostname: string) => {
+  return (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "[::1]" ||
+    hostname === "::1" ||
+    hostname.endsWith(".local") ||
+    hostname.startsWith("192.168.") ||
+    hostname.startsWith("10.") ||
+    hostname.startsWith("172.") ||
+    hostname.includes("ngrok") ||
+    hostname.includes("loca.lt")
+  );
+};
+
 const getWSUrl = () => {
   if (typeof window === "undefined") {
     return process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
@@ -9,7 +24,7 @@ const getWSUrl = () => {
 
   const envUrl = process.env.NEXT_PUBLIC_WS_URL;
   // If explicitly set to a remote URL, use it
-  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
+  if (envUrl && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1") && !envUrl.includes("192.168.") && !envUrl.includes("10.") && !envUrl.includes("172.")) {
     return envUrl;
   }
 
@@ -18,19 +33,12 @@ const getWSUrl = () => {
   const port = window.location.port;
   const host = window.location.host; // includes port
 
-  // If using Next.js dev server on 3000-3010 (or any dev port), connect to backend on 8080
-  if (port && (port.startsWith("3") || port === "5173" || port === "4173")) {
-    return `${protocol}//${hostname}:8080/ws`;
-  }
-
-  // Local IP, Ngrok, or Reverse Proxy
-  if (
-    hostname === "localhost" ||
-    hostname === "127.0.0.1" ||
-    hostname.startsWith("192.168.") ||
-    hostname.includes("ngrok") ||
-    hostname.includes("loca.lt")
-  ) {
+  if (isLocalHostname(hostname)) {
+    // If using Next.js dev server on 3xxx or Vite dev server, connect to backend on 8080
+    if (port && (port.startsWith("3") || port === "5173" || port === "4173")) {
+      return `${protocol}//${hostname}:8080/ws`;
+    }
+    // Otherwise connect to the same host/port (reverse proxy on 8000, ngrok, etc.)
     return `${protocol}//${host}/ws`;
   }
 
@@ -76,15 +84,23 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
   }
 
   function connect() {
-    let ws: WebSocket;
     const url = getWSUrl();
-    try { ws = new WebSocket(url); } catch {
+    console.log(`[WebSocketManager] Connecting to WebSocket at: "${url}"`);
+    console.log(`[WebSocketManager] env.NEXT_PUBLIC_WS_URL: "${process.env.NEXT_PUBLIC_WS_URL}"`);
+    console.log(`[WebSocketManager] hostname: "${window.location.hostname}", port: "${window.location.port}"`);
+
+    let ws: WebSocket;
+    try { 
+      ws = new WebSocket(url); 
+    } catch (e) {
+      console.error("[WebSocketManager] Exception in WebSocket constructor:", e);
       setTimeout(connect, BACKOFF[Math.min(attemptRef.current++, BACKOFF.length - 1)]);
       return;
     }
     wsRef.current = ws;
 
     ws.onopen = () => {
+      console.log("[WebSocketManager] WebSocket connection opened successfully!");
       attemptRef.current = 0;
       setConnected(true);
       ws.send(JSON.stringify({ type: "JOIN_ROOM", roomCode, displayName }));
@@ -117,12 +133,15 @@ export function WebSocketManager({ roomCode, displayName }: { roomCode: string; 
       applyServerMessage(msg);
     };
 
-    ws.onclose = () => {
+    ws.onclose = (evt) => {
+      console.warn(`[WebSocketManager] WebSocket closed. Code: ${evt.code}, Reason: "${evt.reason}"`);
       setConnected(false);
       setTimeout(connect, BACKOFF[Math.min(attemptRef.current++, BACKOFF.length - 1)]);
     };
 
-    ws.onerror = () => {}; // onclose fires after onerror
+    ws.onerror = (err) => {
+      console.error("[WebSocketManager] WebSocket error observed:", err);
+    };
 
     setWS(ws);
   }
